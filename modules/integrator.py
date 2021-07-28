@@ -25,7 +25,7 @@ class Integrator(nn.Module):
         Integrate current feature v^t to global feature grid g^t
         
         Args:
-            feature (torch.Tensor): local feature grid, N x H x W
+            feature (torch.Tensor): local feature grid, N x n x H x W
             indices (torch.Tensor): indices position for each point in feature, N x H x W x 3
             feature_volume (torch.Tensor): global feature grid, X x Y x Z
             count_volume (torch.Tensor): update counts of global feature grid

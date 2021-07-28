@@ -54,7 +54,10 @@ class Pipeline(nn.Module):
         feature_target = feature_target.view(b, h, w, -1)
         
         feature_est = self._fusion(feature_input, values)
-            
+
+        self._prepare_integration_input(values, feature_est, filtered_frame)
+
+        self._integrator.forward()
         # reshape target
         
     
@@ -105,7 +108,19 @@ class Pipeline(nn.Module):
         # TODO
         return feature_est
     
-    
+    def _prepare_integration_input(self, values, est, inputs):
+
+        tail_points = self.config.MODEL.n_tail_points
+        b, h, w = inputs.shape
+        depth = inputs.view(b, h * w, 1)
+
+        valid = (depth != 0.)
+        valid_idx = valid.nonzero()[:, 1]
+
+        integration_indices = values['indices'][:, valid, :]
+
+
+
     def _prepare_volume_update(self, values, est, inputs):
         
         tail_points = self.config.MODEL.n_tail_points

@@ -67,7 +67,7 @@ class Extractor(nn.Module):
         
         extracted_feature, indices = sample_feature(ray_pts, feature_volume, 'nearest')
         
-        n1, n2, n3 = extracted_feature.shape
+        n1, n2, n3 = extracted_feature.shape[:3]
         
         indices = indices.view(n1, n2, n3, 3)
         
@@ -92,7 +92,7 @@ class Extractor(nn.Module):
         :param intrinsics:
         :param origin:
         :param resolution:
-        :return:
+        :return: points_w (b x n_points x 3)
         """
 
         device = depth.device
@@ -144,7 +144,7 @@ class Extractor(nn.Module):
         :param resolution: 1 / grid_resolution
         :param bin_size:
         :param n_points:
-        :return:
+        :return: points: extracted points coords # b x h*w x 2*n_points+1 x 3
         """
         center_v = (coords - origin) / resolution
         eye_v = (eye - origin) / resolution
@@ -191,7 +191,7 @@ def nearest_feature(points, feature_volume):
 
     # get neareast indices
 
-    indices = nearest_indices(points)
+    indices = nearest_indices(points)   # b x (h*n) x dim
 
     n1, n2, n3 = indices.shape
     indices = indices.contiguous().view(n1 * n2, n3)
@@ -202,10 +202,10 @@ def nearest_feature(points, feature_volume):
 
     feature_values = extract_values(indices, feature_volume, valid)
 
-    feature_container = torch.zeros_like(valid, dtype=torch.float)
+    feature_container = torch.zeros((valid.shape[0], feature_values.shape[1]), dtype=torch.float)
     feature_container[valid_idx] = feature_values
 
-    feature_values = feature_container.view(b, h, n)
+    feature_values = feature_container.view(b, h, n, -1)
     
     return feature_values.float(), indices
 

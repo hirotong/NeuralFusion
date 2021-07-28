@@ -34,8 +34,7 @@ class FusionNet(nn.Module):
         x1 = self.encoder.forward(x)
         x2 = self.decoder.forward(x1) 
         # TODO normalize the feature
-        x2 = F.normalize(x2, dim=-1)    # b x 1 x h x w
-        
+        x2 = F.normalize(x2, dim=1)    # b x n x h x w
         return x2
 
 class Encoder(nn.Module):
@@ -72,7 +71,7 @@ class Decoder(nn.Module):
         super().__init__()
         
         self.in_shape = config.in_shape 
-        self.n_channels = 2 * config.n_points + 1
+        self.n_channels = 2 * config.len_feature + 1
         
         self.block1 = block(self.in_shape, 5 * self.n_channels, 4 * self.n_channels, kernel_size=1, padding=0)
         self.block2 = block(self.in_shape, 4 * self.n_channels, 3 * self.n_channels, kernel_size=1, padding=0)
@@ -81,11 +80,11 @@ class Decoder(nn.Module):
         nn.Conv2d(2 * self.n_channels, self.n_channels,  kernel_size=1, padding=0, bias=True),
         nn.LayerNorm(self.in_shape[2:]),
         nn.Tanh(),
-        nn.Conv2d(self.n_channels, config.n_points, kernel_size=1, padding=0, bias=True),
+        nn.Conv2d(self.n_channels, self.n_channels, kernel_size=1, padding=0, bias=True),
         nn.LayerNorm(self.in_shape[2:]),
         nn.Tanh(),        
     )
-        self.linear = nn.Conv2d(config.n_points, 1, 1)
+        self.linear = nn.Conv2d(config.len_feature, 1, 1)
         
     def forward(self, x):
         
