@@ -65,7 +65,7 @@ def insert_values(values, indices, volume):
 def index_shift(radius):
     t = torch.arange(-radius, radius+1)
     dz, dy, dx = torch.meshgrid([t, t, t])
-    shift = torch.stack([dx, dy, dz], dim=-1)
+    shift = torch.stack([dx, dy, dz], dim=-1).view(-1, 3)
     return shift
 
 
@@ -76,5 +76,4 @@ def get_activation(module_name, class_name):
 
 
 if __name__ == '__main__':
-    activation = get_activation('ReLU')
-    print(activation)
+    print(index_shift(2))

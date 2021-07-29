@@ -24,7 +24,7 @@ class Interpolator(nn.Module):
         self.linear = nn.Linear(
             self.n_neighbors * config.len_feature, config.len_feature)
 
-    def _gather_feature(self, feature_volume, count_volume, threshold=0):
+    def _gather_feature(self, query_indices, query_points, feature_volume, count_volume, threshold=0):
 
         def _pad_feature_volume(feature_volume):
             feature_volume = feature_volume.permute(-1, 0, 1, 2)
@@ -35,28 +35,31 @@ class Interpolator(nn.Module):
 
         device = feature_volume.device
         xs, ys, zs, n = feature_volume.shape
+        n1, n2, n3, _ = query_indices.shape
+        
+        query_indices = query_indices.contiguous().view(n1 * n2 * n3, 3).long()
+        neighbor_indices = (query_indices.unsqueeze(1) + self.index_shift).contiguous().view(-1, 3)
+        
+        # ? whether to filter via update count
+        # valid = torch.gt(count_volume, threshold)
+        # indices = torch.nonzero(valid)
 
-        valid = torch.gt(count_volume, threshold)
-        indices = torch.nonzero(valid)
-
-        shifted_indices = indices.unsqueeze(1) + self.index_shift
         # shift radius due to feature padding below
-        shifted_indices = shifted_indices.reshape(-1, 3) + self.radius
+        neighbor_indices = neighbor_indices + self.radius
 
         # pad feature volume in case of out of bound
         padded_feature = _pad_feature_volume(feature_volume)
 
-        gathered_feature = extract_values(shifted_indices, padded_feature)
+        gathered_feature = extract_values(neighbor_indices, padded_feature)
         gathered_feature = gathered_feature.view(-1, self.n_neighbors * n)
 
-        return gathered_feature, indices
+        return gathered_feature, query_indices
 
-    def forward(self, feature_volume, count_volume):
+    def forward(self, query_indices, query_points, feature_volume, count_volume):
 
         # xs, ys, zs, n = feature_volume.shape
 
-        gathered_feature, indices = self._gather_feature(
-            feature_volume, count_volume, self.count_threshold)
+        gathered_feature, indices = self._gather_feature(query_indices, query_points, feature_volume, count_volume, self.count_threshold)
 
         gathered_feature = self.linear(gathered_feature)
 
@@ -131,16 +134,16 @@ class Translator(nn.Module):
         self._neighbor_interpolator = Interpolator(config)
         self._translate_mlp = TranslateMLP(config)
         
-    def forward(self, feature_volume, count_volume):
+    def forward(self, query_indices, query_points, feature_volume, count_volume):
         
         device = feature_volume.device
         tsdf_volume = torch.zeros_like(count_volume).to(device)
         occ_volume = torch.zeros_like(count_volume).to(device)
-        gathered_feature, indices = self._neighbor_interpolator.forward(feature_volume, count_volume)
+        gathered_feature, indices = self._neighbor_interpolator.forward(query_indices, query_points,feature_volume, count_volume)
         tsdf, occupancy = self._translate_mlp.forward(gathered_feature)
         
         insert_values(tsdf, indices, tsdf_volume)
         insert_values(occupancy, indices, occ_volume)
         
-        return tsdf_volume, occ_volume
+        return tsdf_volume, occ_volume, tsdf, occupancy
     

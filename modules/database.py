@@ -1,6 +1,6 @@
 import os
 import h5py
-
+import torch
 import numpy as np
 
 from torch.utils.data import Dataset
@@ -24,9 +24,13 @@ class Database(Dataset):
             
             grid = dataset.get_grid(s, truncation=self.initial_value)
             
-            self.scenes_gt[s] = grid
             
-            init_volume = self.initial_value * np.ones_like(grid.volume)
+            self.scenes_tsdf[s] = grid
+            # TODO get occupancy volume from input data
+            self.scenes_occ[s] = None
+            
+            # init_volume = self.initial_value * np.ones_like(grid.volume)
+            init_volume = self.initial_value * np.ones(grid.volume.shape + tuple([config.len_feature]))
             
             self.scenes_est[s] = Voxelgrid(self.scenes_gt[s].resolution)
             self.scenes_est[s].from_array(init_volume, self.scenes_gt[s].bbox)
@@ -36,8 +40,8 @@ class Database(Dataset):
     def __getitem__(self, item):
 
         sample = dict()
-        
-        sample['gt'] = self.scenes_gt[item].volume
+        sample['occ'] = self.scenes_occ[item].volume
+        sample['tsdf'] = self.scenes_tsdf[item].volume
         sample['current'] = self.scenes_est[item].volume
         sample['origin'] = self.scenes_gt[item].origin
         sample['resolution'] = self.scenes_gt[item].resolution
