@@ -2,7 +2,49 @@ import torch
 
 import numpy as np
 
+from torch import nn
 
+class NeuralFusionLoss(nn.Module):
+    
+    def __init__(self, config, reduction='none', l1=True, l2=True):
+        super().__init__()
+        
+        self.criterion1 = nn.L1Loss(reduction=reduction)
+        self.criterion2 = nn.MSELoss(reduction=reduction)
+        self.criterion3 = nn.BCELoss(reduction=reduction)
+        self.criterion4 = RegularizeLoss(reduction=reduction)
+        
+        self.lambda1 = 1. if l1 else 0.
+        self.lambda2 = 10. if l2 else 0.
+        self.lambda3 = 0.01
+        self.lambda4 = 0.05
+        
+    def forward(self, output):
+        
+        l1 = self.criterion1(output['tsdf_est'], output['tsdf_target'])
+        l2 = self.criterion2(output['tsdf_est'], output['tsdf_target'])
+        l3 = self.criterion3(output['occ_est'], output['occ_target'])
+        l4 = self.criterion4(output['feature_est'])
+        
+        normalization = torch.ones_like(output['tsdf_est']).sum()
+        
+        l1 = l1.sum() / normalization
+        l2 = l2.sum() / normalization
+        l3 = l3.sum() / normalization
+        l4 = l4.sum() / normalization
+        
+        loss = self.lambda1 * l1 + self.lambda2 * l2 + self.lambda3 * l3 + self.lambda4 * l4 
+        
+        return loss
+
+class RegularizeLoss(nn.Module):
+    def __init__(self, config, reduction='none'):
+        super().__init__()
+        
+    def forward(self, est):
+        var = torch.var(est, dim=-1, unbiased=False)
+        return var.mean()
+        
 class FusionLoss(torch.nn.Module):
 
     def __init__(self, config, reduction='none', l1=True, l2=True, cos=True):

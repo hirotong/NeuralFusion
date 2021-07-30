@@ -18,6 +18,8 @@ class Database(Dataset):
         
         self.scenes_gt = {}
         self.scenes_est = {}
+        self.scenes_tsdf = {}
+        self.scenes_occ = {}
         self.fusion_weights = {}
         
         for s in dataset.scenes:
@@ -62,6 +64,24 @@ class Database(Dataset):
             weights = self.fusion_weights[key]
             self.scenes_est[key].volume[weights < value] = self.initial_value
             self.fusion_weights[key][weights < value] = 0
+            
+    def save_to_workspace(self, workspace):
+        
+        for key in self.scenes_est.keys():
+            
+            tsdf_volume = self.scenes_tsdf[key].volume
+            occ_volume = self.scenes_tsdf[key].volume
+            
+            tsdf_file = key.replace(os.path.sep, '.') + '.tsdf.hf5'
+            occ_file = key.replace(os.path.sep, '.') + '.weights.hf5'
+            
+            workspace.save_tsdf_data(tsdf_file, tsdf_volume)
+            workspace.save_occ_data(occ_file, occ_volume)          
+            
+                    
+    
+    def reset(self, ):
+        pass
 
 if __name__ == '__main__':
     v = Voxelgrid()

@@ -77,15 +77,16 @@ class Pipeline(nn.Module):
                             ].volume = feature_volume.cpu().detach().numpy()
         database.update_counts[batch['scene_id'][0]
                                ] = count_volume.cpu().detach().numpy()
-
         # translate
         
         tsdf_volume, occ_volume, tsdf_est, occ_est = self._translator.forward(integration_indices, integration_points, feature_volume, count_volume)
         
+        # TODO update database.scenes_tsdf database.scenes_occ
         output['tsdf_est'] = tsdf_est
         output['occ_est'] = occ_est
         output['tsdf_target'] = tsdf_target
         output['occ_target'] = occ_target
+        output['feature_est'] = feature_est
         
         return output
 
