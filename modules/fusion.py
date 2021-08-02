@@ -3,7 +3,7 @@ Description:
 Author: Jinguang Tong
 Affliction: Australia National University, CSIRO
 Date: 2021-07-25 17:51:31
-LastEditTime: 2021-07-26 22:45:10
+LastEditTime: 2021-07-31 16:59:48
 '''
 
 import torch
@@ -15,10 +15,10 @@ import torchvision.models.resnet
 def block(in_shape, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True, activation=nn.Tanh()):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-        nn.LayerNorm(in_shape[2:]),
+        nn.LayerNorm(in_shape),
         activation,
         nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
-        nn.LayerNorm(in_shape[2:]),
+        nn.LayerNorm(in_shape),
         activation,        
     )
 
@@ -30,11 +30,11 @@ class FusionNet(nn.Module):
         self.decoder = Decoder(config)
         
     def forward(self, x):
-        
+        x = x.float()
         x1 = self.encoder.forward(x)
         x2 = self.decoder.forward(x1) 
-        # TODO normalize the feature
-        x2 = F.normalize(x2, dim=1)    # b x n x h x w
+        # TODO how to normalize the feature
+        x2 = F.normalize(x2, dim=1)    # b x (n_points * len_feature) x h x w
         return x2
 
 class Encoder(nn.Module):
@@ -42,7 +42,7 @@ class Encoder(nn.Module):
         super().__init__()
         
         self.in_shape = config.in_shape
-        self.n_channels = 2 * config.n_points + 1
+        self.n_channels = config.n_points * config.len_feature + 4
 
         self.block1 = block(self.in_shape, self.n_channels, self.n_channels)
         self.block2 = block(self.in_shape, 2 * self.n_channels, self.n_channels)
@@ -71,20 +71,20 @@ class Decoder(nn.Module):
         super().__init__()
         
         self.in_shape = config.in_shape 
-        self.n_channels = 2 * config.len_feature + 1
+        self.n_channels = config.n_points * config.len_feature + 4
         
         self.block1 = block(self.in_shape, 5 * self.n_channels, 4 * self.n_channels, kernel_size=1, padding=0)
         self.block2 = block(self.in_shape, 4 * self.n_channels, 3 * self.n_channels, kernel_size=1, padding=0)
         self.block3 = block(self.in_shape, 3 * self.n_channels, 2 * self.n_channels, kernel_size=1, padding=0)
         self.block4 = nn.Sequential(
         nn.Conv2d(2 * self.n_channels, self.n_channels,  kernel_size=1, padding=0, bias=True),
-        nn.LayerNorm(self.in_shape[2:]),
+        nn.LayerNorm(self.in_shape),
         nn.Tanh(),
         nn.Conv2d(self.n_channels, self.n_channels, kernel_size=1, padding=0, bias=True),
-        nn.LayerNorm(self.in_shape[2:]),
+        nn.LayerNorm(self.in_shape),
         nn.Tanh(),        
     )
-        self.linear = nn.Conv2d(config.len_feature, 1, 1)
+        self.linear = nn.Conv2d(self.n_channels, config.n_points * config.len_feature, 1, 1)
         
     def forward(self, x):
         

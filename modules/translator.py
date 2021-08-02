@@ -3,7 +3,7 @@ Description:
 Author: Jinguang Tong
 Affliction: Australia National University, DATA61 CSIRO
 Date: 2021-07-26 17:19:20
-LastEditTime: 2021-07-27 22:33:11
+LastEditTime: 2021-07-31 17:02:09
 '''
 
 import torch
@@ -53,6 +53,8 @@ class Interpolator(nn.Module):
         gathered_feature = extract_values(neighbor_indices, padded_feature)
         gathered_feature = gathered_feature.view(-1, self.n_neighbors * n)
 
+        del padded_feature
+
         return gathered_feature, query_indices
 
     def forward(self, query_indices, query_points, feature_volume, count_volume):
@@ -60,10 +62,14 @@ class Interpolator(nn.Module):
         # xs, ys, zs, n = feature_volume.shape
 
         gathered_feature, indices = self._gather_feature(query_indices, query_points, feature_volume, count_volume, self.count_threshold)
+        gathered_feature = gathered_feature.float()
 
         gathered_feature = self.linear(gathered_feature)
 
-        return gathered_feature, indices
+        query_feature = extract_values(indices, feature_volume)
+        query_feature = query_feature.float()
+
+        return torch.cat([query_feature, gathered_feature], dim=-1), indices
 
 class TranslateMLP(nn.Module):
     
@@ -72,29 +78,30 @@ class TranslateMLP(nn.Module):
         
         self.tsdf_scale = config.tsdf_scale
         self.p = config.p_dropout
+        self.n_points = config.n_points
         self.len_feature = config.len_feature
-        self.activation = get_activation(config.activation)
+        self.activation = get_activation('torch.nn', config.activation)
         self.out_channels = [32, 16, 8, 8]
         self.layer1 = nn.Sequential(
-            nn.Linear(config.len_feature * 2, self.out_channels[0]),
+            nn.Linear(self.len_feature * 2, self.out_channels[0]),
             self.activation,
             nn.Dropout(p=self.p)
         )
         
         self.layer2 = nn.Sequential(
-            nn.Linear(self.out_channels[0] + self.len_feature, self.out_channels[1]),
+            nn.Linear(self.out_channels[0] + self.len_feature * 2, self.out_channels[1]),
             self.activation,
             nn.Dropout(p=self.p)
         )
         
         self.layer3 = nn.Sequential(
-            nn.Linear(self.out_channels[1] + self.len_feature, self.out_channels[2]),
+            nn.Linear(self.out_channels[1] + self.len_feature * 2, self.out_channels[2]),
             self.activation,
             nn.Dropout(p=self.p)
         )
         
         self.layer4 = nn.Sequential(
-            nn.Linear(self.out_channels[2] + self.len_feature, self.out_channels[3]),
+            nn.Linear(self.out_channels[2] + self.len_feature * 2, self.out_channels[3]),
             self.activation,
             nn.Dropout(p=self.p)
         )
@@ -114,14 +121,14 @@ class TranslateMLP(nn.Module):
         x1 = self.layer1(x)
         x1 = torch.cat([x, x1], dim=1)
         x2 = self.layer2(x1)
-        x2 = torch.cat([x1, x2], dim=1)
+        x2 = torch.cat([x, x2], dim=1)
         x3 = self.layer3(x2)
-        x3 = torch.cat([x2, x3], dim=1)
+        x3 = torch.cat([x, x3], dim=1)
         x4 = self.layer4(x3)
         
         tsdf =self.tsdf_scale * self.tsdf_head(x4)
         occupancy = self.occ_head(x4)
-        
+
         return tsdf, occupancy
         
 
@@ -137,13 +144,15 @@ class Translator(nn.Module):
     def forward(self, query_indices, query_points, feature_volume, count_volume):
         
         device = feature_volume.device
-        tsdf_volume = torch.zeros_like(count_volume).to(device)
-        occ_volume = torch.zeros_like(count_volume).to(device)
+        tsdf_volume = torch.zeros_like(count_volume).float().to(device)
+        occ_volume = torch.zeros_like(count_volume).float().to(device)
         gathered_feature, indices = self._neighbor_interpolator.forward(query_indices, query_points,feature_volume, count_volume)
         tsdf, occupancy = self._translate_mlp.forward(gathered_feature)
-        
-        insert_values(tsdf, indices, tsdf_volume)
-        insert_values(occupancy, indices, occ_volume)
+
+
+
+        insert_values(tsdf.squeeze(), indices, tsdf_volume)
+        insert_values(occupancy.squeeze(), indices, occ_volume)
         
         return tsdf_volume, occ_volume, tsdf, occupancy
     

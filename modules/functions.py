@@ -11,7 +11,7 @@ import torch
 
 def get_index_mask(indices, shape):
 
-    xs, ys, zs = shape
+    xs, ys, zs = shape[:3]
 
     valid = (
         (indices[:, 0] >= 0) &

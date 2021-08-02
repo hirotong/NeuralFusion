@@ -57,13 +57,18 @@ class Pipeline(nn.Module):
         # reshape target
         tsdf_target = tsdf_gt['extracted_feature']
         occ_target = occ_gt['extracted_feature']
-        tsdf_target = tsdf_target.view(b, h, w, -1)
-        occ_target = occ_target.view(b, h, w, -1)
+        tsdf_target = tsdf_target.view(b, h * w, -1)
+        occ_target = occ_target.view(b, h * w, -1)
         # feature_target = feature_target.view(b, h * w, self.config.MODEL.n_points)
         
         values['points'] = values['points'][:, :, :self.config.MODEL.n_points].contiguous()
         # mask invalid losses
-        feature_est = masking(feature_est, filtered_frame.view(b, h * w, 1))
+        # feature_est = masking(feature_est, filtered_frame.view(b, h * w, 1))
+        tsdf_target = masking(tsdf_target, filtered_frame.view(b, h * w, 1))
+        occ_target = masking(occ_target, filtered_frame.view(b, h * w, 1))
+
+        tsdf_target = tsdf_target.squeeze().view(-1, 1)
+        occ_target = occ_target.squeeze().view(-1, 1)
 
         integration_values, integration_indices, integration_points = self._prepare_integration_input(
             values, feature_est, filtered_frame)
@@ -73,7 +78,7 @@ class Pipeline(nn.Module):
             integration_indices.to(device),
             database[batch['scene_id'][0]]['current'].to(device),
             database[batch['scene_id'][0]]['counts'].to(device))
-        database.secens_est[batch['scene_id'][0]
+        database.scenes_est[batch['scene_id'][0]
                             ].volume = feature_volume.cpu().detach().numpy()
         database.update_counts[batch['scene_id'][0]
                                ] = count_volume.cpu().detach().numpy()
@@ -99,20 +104,22 @@ class Pipeline(nn.Module):
 
         # extracting data
         feature_input = values['extracted_feature']
+        ray_direction = values['direction']
 
         # reshaping data
         feature_input = feature_input.view(b, h, w, -1)
+        ray_direction = ray_direction.view(b, h, w, 3)
 
         feature_frame = torch.unsqueeze(frame, -1)
 
         # stacking input data
-        feature_input = torch.cat([feature_input, feature_frame], dim=3)
+        feature_input = torch.cat([feature_input, ray_direction, feature_frame], dim=3)
 
         # permuting input
         feature_input = feature_input.permute(0, 3, 1, 2)
 
         del feature_frame
-        return feature_input  # b x 2 x h x w
+        return feature_input  # b x (len_feature + 3 + 1) x h x w
 
     def _fusion(self, input, values):
         b, c, h, w = input.shape
@@ -134,7 +141,7 @@ class Pipeline(nn.Module):
         depth = inputs.view(b, h * w, 1)
 
         valid = (depth != 0.)
-        valid_idx = valid.nonzero()[:, 1]
+        valid = valid.nonzero()[:, 1]
 
         integration_indices = values['indices'][:, valid]
         integration_points = values['points'][:, valid]
@@ -150,10 +157,50 @@ class Pipeline(nn.Module):
 
 
 def masking(x, values, threshold=0., option='ueq'):
-    if 'leq' == option:
+
+    if option == 'leq':
+
         if x.dim() == 2:
             valid = (values <= threshold)[0, :, 0]
             xvalid = valid.nonzero()[:, 0]
             xmasked = x[:, xvalid]
         if x.dim() == 3:
-            valid = (values <= threshold)
+            valid = (values <= threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid, :]
+
+    if option == 'geq':
+
+        if x.dim() == 2:
+            valid = (values >= threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid]
+        if x.dim() == 3:
+            valid = (values >= threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid, :]
+
+    if option == 'eq':
+
+        if x.dim() == 2:
+            valid = (values == threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid]
+        if x.dim() == 3:
+            valid = (values == threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid, :]
+
+    if option == 'ueq':
+
+        if x.dim() == 2:
+            valid = (values != threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid]
+        if x.dim() == 3:
+            valid = (values != threshold)[0, :, 0]
+            xvalid = valid.nonzero()[:, 0]
+            xmasked = x[:, xvalid, :]
+
+
+    return xmasked

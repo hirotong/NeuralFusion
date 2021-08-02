@@ -38,7 +38,7 @@ class NeuralFusionLoss(nn.Module):
         return loss
 
 class RegularizeLoss(nn.Module):
-    def __init__(self, config, reduction='none'):
+    def __init__(self, reduction='none'):
         super().__init__()
         
     def forward(self, est):

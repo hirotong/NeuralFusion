@@ -19,7 +19,7 @@ class Extractor(nn.Module):
         
         self.config = config
         
-        self.n_points = 9
+        self.n_points = config.n_points
         self.mode = 'ray'
 
     def forward(self, depth, extrinsics, intrinsics, feature_volume, origin, resolution, weight_volume=None):
@@ -56,17 +56,17 @@ class Extractor(nn.Module):
         self.depth = depth.contiguous().view(b, h * w)
 
         # world coordinates
-        coords = self.compute_coordinates(
-            depth, extrinsics, intrinsics, origin, resolution)
+        coords = self.compute_coordinates(depth, extrinsics, intrinsics, origin, resolution)    # b x (h * w) x 3
         
         # compute rays
         # camera in world coordinate
         eye_w = extrinsics[:, :3, 3]
 
-        ray_pts, ray_dists = self._extract_values(coords, eye_w, origin, resolution, n_points=int((self.n_points-1)/2))
+        ray_pts, ray_dists, ray_directions = self._extract_values(coords, eye_w, origin, resolution, n_points=int((self.n_points-1)/2))
         
         extracted_feature, indices = sample_feature(ray_pts, feature_volume, 'nearest')
-        
+
+        extracted_feature = extracted_feature.squeeze(-1)
         n1, n2, n3 = extracted_feature.shape[:3]
         
         indices = indices.view(n1, n2, n3, 3)
@@ -74,6 +74,7 @@ class Extractor(nn.Module):
         # packing
         values = dict(extracted_feature=extracted_feature,
                       points=ray_pts,
+                      direction=ray_directions,
                       depth=depth.view(b, h*w),
                       indices=indices,
                       pcl=coords)
@@ -173,7 +174,7 @@ class Extractor(nn.Module):
         dists = torch.stack(dists, dim=2)
         points = torch.stack(points, dim=2)
 
-        return points, dists
+        return points, dists, direction
 
 
 def sample_feature(points, feature_volume, method='nearset'):
@@ -201,7 +202,7 @@ def nearest_feature(points, feature_volume):
     valid_idx = torch.nonzero(valid)[:, 0]
 
     feature_values = extract_values(indices, feature_volume, valid)
-
+    feature_values = feature_values.view(feature_values.shape[0], -1)
     feature_container = torch.zeros((valid.shape[0], feature_values.shape[1]), dtype=torch.float)
     feature_container[valid_idx] = feature_values
 

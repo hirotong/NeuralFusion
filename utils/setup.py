@@ -43,6 +43,7 @@ def get_database(dataset, config, mode='train'):
 
     #TODO: make this better
     database_config = copy(config.DATA)
+    database_config.len_feature = config.MODEL.len_feature
     database_config.transform = transform.ToTensor()
     database_config.scene_list = eval('config.DATA.{}_scene_list'.format(mode))
 
@@ -82,6 +83,12 @@ def get_logger(path, name='training'):
 def save_tsdf(filename, data):
     with h5py.File(filename, 'w') as file:
         file.create_dataset('TSDF',
+                            shape=data.shape,
+                            data=data)
+        
+def save_occ(filename, data):
+    with h5py.File(filename, 'w') as file:
+        file.create_dataset('OCCUPANCY',
                             shape=data.shape,
                             data=data)
 
@@ -124,6 +131,10 @@ class Workspace(object):
     def save_tsdf_data(self, file, data):
         tsdf_file = os.path.join(self.output_path, file)
         save_tsdf(tsdf_file, data)
+    
+    def save_occ_data(self, file, data):
+        occ_file = os.path.join(self.output_path, file)
+        save_occ(occ_file, data)
 
     def save_weights_data(self, file, data):
         weight_files = os.path.join(self.output_path, file)

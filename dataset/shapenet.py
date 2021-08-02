@@ -158,6 +158,24 @@ class ShapeNet(Dataset):
             grid.volume[np.abs(grid.volume) >= truncation] = truncation
         return grid
 
+    def get_occ(self, scene):
+        # TODO
+        sc, obj = scene.split(os.sep)
+        if self.grid_resolution == 256:
+            filepath = os.path.join(self.root_dir, sc, obj, 'occupancy', '*.npz')
+        else:
+            filepath = os.path.join(self.root_dir, sc, obj, 'occupancy', f'*.{self.resolution}.npz')
+
+        filepath = glob.glob(filepath)[0]
+        volume = np.load(filepath)
+
+        occupancies = volume['occupancies']
+        
+        resolution = 1. / self.grid_resolution
+        occ = Voxelgrid(resolution)
+        occ.volume = np.zeros((128, 128, 128))
+        return occ
+
         
 
 if __name__ == '__main__':

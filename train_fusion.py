@@ -22,7 +22,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--config')
-    parser.add_argument('--experiment')
+    parser.add_argument('--experiment', type=str, default="experiment/")
 
     args = parser.parse_args()
     return vars(args)
@@ -47,12 +47,12 @@ def train_fusion(args):
     # get train dataset
     train_data_config = get_data_config(config, mode='train')
     train_dataset = get_data(config.DATA.dataset, train_data_config)
-    train_loader = DataLoader(train_dataset, config.TRAINING.train_batch_size)
+    train_loader = DataLoader(train_dataset, config.TRAINING.train_batch_size, num_workers=1)
 
     # get val dataset
     val_data_config = get_data_config(config, mode='val')
     val_dataset = get_data(config.DATA.dataset, val_data_config)
-    val_loader = DataLoader(val_dataset, config.TRAINING.val_batch_size)
+    val_loader = DataLoader(val_dataset, config.TRAINING.val_batch_size, num_workers=1)
 
     # get database
     # get train database
@@ -159,5 +159,6 @@ def train_fusion(args):
 
 
 if __name__ == '__main__':
-    config = arg_parse()
-    print(config.config)
+    args = arg_parse()
+    print(args['config'])
+    train_fusion(args)

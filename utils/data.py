@@ -102,8 +102,8 @@ def add_outliers(x, scale=5, fraction=0.99):
     # check for invalid data points
     x[x < 0.] = 0.
 
-    random.seed(time.clock())
-    np.random.seed(int(time.clock()))
+    random.seed(time.perf_counter())
+    np.random.seed(int(time.perf_counter()))
 
     # filter with probability:
     mask = np.random.uniform(0, 1, x.shape)

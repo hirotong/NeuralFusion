@@ -30,31 +30,31 @@ class Integrator(nn.Module):
             feature_volume (torch.Tensor): global feature grid, X x Y x Z
             count_volume (torch.Tensor): update counts of global feature grid
         """
-        xs, ys, zs = feature_volume.shape
+        xs, ys, zs, n = feature_volume.shape
         
         # reshape tensors
         n1, n2, n3 = feature.shape
         
-        feature = feature.contiguous().view(n1 * n2 * n3, 1)
+        feature = feature.contiguous().view(-1, n)
         weights = torch.ones_like(feature)
-        indices = indices.contiguous().view(n1 * n2 * n3, 3).long()
+        indices = indices.contiguous().view(n1 * n2 * n, 3).long()
         
         valid = get_index_mask(indices, feature_volume.shape)
         
-        feature = torch.masked_select(feature[:, 0] ,valid)
-        weights = torch.masked_select(weights[:, 0] ,valid)
+        feature = torch.masked_select(feature ,valid.unsqueeze(1)).view(-1, n)
+        weights = torch.masked_select(weights ,valid.unsqueeze(1)).view(-1, n)
         indices = extract_indices(indices, mask=valid)
         
-        fcache = torch.zeros_like(feature_volume).view(xs * ys * zs).to(self.device)
-        wcache = torch.zeros_like(feature_volume).view(xs * ys * zs).to(self.device)
+        fcache = torch.zeros_like(feature_volume, dtype=torch.float).view(xs * ys * zs, n).to(self.device)
+        wcache = torch.zeros_like(feature_volume, dtype=torch.float).view(xs * ys * zs, n).float().to(self.device)
         
         index = ys * zs * indices[:, 0] + zs * indices[:, 1] + indices[:, 2]
         
         fcache.index_add_(0, index, feature)
         wcache.index_add_(0, index, weights)
         
-        fcache = fcache.view(xs, ys, zs)
-        wcache = wcache.view(xs, ys, zs)
+        fcache = fcache.view(xs, ys, zs, n)
+        wcache = wcache.view(xs, ys, zs, n)
         
         update = extract_values(indices, fcache)
         weights = extract_values(indices, wcache)
@@ -65,7 +65,7 @@ class Integrator(nn.Module):
         counts_old = extract_values(indices, count_volume)
         counts_update = counts_old + torch.ones_like(counts_old)
         
-        feature_update = feature_old * counts_old + feature_pooling / counts_update
+        feature_update = (feature_old * counts_old.unsqueeze(1) + feature_pooling) / counts_update.unsqueeze(1)
         
         insert_values(feature_update, indices, feature_volume)
         insert_values(counts_update, indices, count_volume)      
