@@ -3,21 +3,21 @@
 cd deps/mesh-fusion
 
 # install libfusiongpu
-# cd libfusioncpu
-# mkdir build
-# cd build
-# cmake ..
-# make
-# cd ..
-# python setup.py build_ext --inplace
-# mv *.so cyfusion.so
-# cd ..
+cd libfusioncpu
+mkdir build
+cd build
+cmake ..
+make
+cd ..
+python setup.py build_ext --inplace
+mv *.so cyfusion.so
+cd ..
 
 # install librender
-# cd librender
-# python setup.py build_ext --inplace
-# mv *.so pyrender.so
-# cd ..
+cd librender
+python setup.py build_ext --inplace
+mv *.so pyrender.so
+cd ..
 
 # install libmcubes
 cd libmcubes

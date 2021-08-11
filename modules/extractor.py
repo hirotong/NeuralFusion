@@ -37,9 +37,9 @@ class Extractor(nn.Module):
             weight_volume ([type], optional): [description]. Defaults to None.
         """
 
-        feature_volume = feature_volume.float()
         device = depth.get_device()
-
+        
+        feature_volume = feature_volume.float()
         intrinsics = intrinsics.float()
         extrinsics = extrinsics.float()
 
@@ -48,7 +48,7 @@ class Extractor(nn.Module):
             extrinsics = extrinsics.to(device)
 
             feature_volume = feature_volume.to(device)
-            weight_volume = weight_volume.to(device)
+            # weight_volume = weight_volume.to(device)
             origin = origin.to(device)
 
         b, h, w = depth.shape
@@ -188,6 +188,7 @@ def sample_feature(points, feature_volume, method='nearset'):
 
 def nearest_feature(points, feature_volume):
 
+    device = feature_volume.device
     b, h, n, dim = points.shape
 
     # get neareast indices
@@ -203,10 +204,12 @@ def nearest_feature(points, feature_volume):
 
     feature_values = extract_values(indices, feature_volume, valid)
     feature_values = feature_values.view(feature_values.shape[0], -1)
-    feature_container = torch.zeros((valid.shape[0], feature_values.shape[1]), dtype=torch.float)
+    feature_container = torch.zeros((valid.shape[0], feature_values.shape[1]), dtype=torch.float, device=device)
     feature_container[valid_idx] = feature_values
 
     feature_values = feature_container.view(b, h, n, -1)
+    
+    del feature_container
     
     return feature_values.float(), indices
 

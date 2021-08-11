@@ -75,7 +75,7 @@ def load_model(file, model):
         model.state_dict().update(pretrained_dict)
         model.load_state_dict(model.state_dict())
 
-def load_pipeline(file, model):
+def load_pipeline(file, model, device):
 
     checkpoint = file
 
@@ -83,7 +83,7 @@ def load_pipeline(file, model):
         raise FileNotFoundError("File doesn't exist {}".format(checkpoint))
     try:
         if torch.cuda.is_available():
-            checkpoint = torch.load(checkpoint)
+            checkpoint = torch.load(checkpoint, map_location=device)
         else:
             checkpoint = torch.load(checkpoint, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['pipeline_state_dict'])

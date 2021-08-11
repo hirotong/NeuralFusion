@@ -3,7 +3,7 @@ Description:
 Author: Jinguang Tong
 Affliction: Australia National University, DATA61 CSIRO
 Date: 2021-07-26 14:05:16
-LastEditTime: 2021-07-27 15:44:47
+LastEditTime: 2021-08-03 18:00:27
 '''
 
 import torch
@@ -68,7 +68,9 @@ class Integrator(nn.Module):
         feature_update = (feature_old * counts_old.unsqueeze(1) + feature_pooling) / counts_update.unsqueeze(1)
         
         insert_values(feature_update, indices, feature_volume)
-        insert_values(counts_update, indices, count_volume)      
+        insert_values(counts_update, indices, count_volume)  
+        
+        del fcache, wcache, feature, weights, update, feature_pooling, feature_old, counts_old, feature_update, counts_update
         
         return feature_volume, count_volume
         

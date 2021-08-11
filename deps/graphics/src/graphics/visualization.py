@@ -28,7 +28,7 @@ def plot_tsdf(tsdf):
     s = np.ravel(tsdf, order='C')
 
     mlab.points3d(xx, yy, zz, s,
-                  mode='cube',
+                  mode='cube', 
                   scale_factor=1)
 
     mlab.show()

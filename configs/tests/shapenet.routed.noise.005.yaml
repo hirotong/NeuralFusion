@@ -1,9 +1,10 @@
 TEST:
   name: shapenet_routed_noise_005
 SETTINGS:
-  data_path: /data
+  data_path: ~/data
+  gpu: 1
 DATA:
-  root_dir: /data
+  root_dir: ~/data/ShapeNetCoreV1
   key: noisy_depth_octnetfusion
   dataset: ShapeNet
   test_scene_list: lists/shapenet/fusion/test.txt
@@ -21,3 +22,5 @@ TESTING:
     - shapenet.all.noise.005.yaml
   shuffle: False
   batch_size: 1
+MODEL:
+  len_feature: 9

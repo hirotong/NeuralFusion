@@ -11,12 +11,27 @@ def evaluation(est, target, mask=None, value=0.1):
     mad = mad_fn(est, target, mask)
     iou = iou_fn(est, target, mask)
     acc = acc_fn(est, target, mask)
+    recall = recall_fn(est, target, mask)
+    f1 = 2 * acc * recall / (acc + recall)
 
     return {'mse': mse,
             'mad': mad,
             'iou': iou,
-            'acc': acc}
+            'acc': acc,
+            'F1':  f1}
 
+
+def recall_fn(est, target, mask=None):
+    
+    if mask is not None:
+        tp = (est < 0) & (target < 0) & (mask > 0)
+        fn = (est >= 0) & (target < 0) & (mask > 0)
+    else:
+        tp = (est < 0) & (target < 0)
+        fn = (est >= 0) & (target < 0)
+    
+    metric = tp.sum() / (tp.sum() + fn.sum())
+    return metric
 
 def rmse_fn(est, target, mask=None):
 

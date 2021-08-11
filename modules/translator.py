@@ -3,7 +3,7 @@ Description:
 Author: Jinguang Tong
 Affliction: Australia National University, DATA61 CSIRO
 Date: 2021-07-26 17:19:20
-LastEditTime: 2021-07-31 17:02:09
+LastEditTime: 2021-08-03 18:25:13
 '''
 
 import torch
@@ -37,6 +37,7 @@ class Interpolator(nn.Module):
         xs, ys, zs, n = feature_volume.shape
         n1, n2, n3, _ = query_indices.shape
         
+        self.index_shift = self.index_shift.to(device)
         query_indices = query_indices.contiguous().view(n1 * n2 * n3, 3).long()
         neighbor_indices = (query_indices.unsqueeze(1) + self.index_shift).contiguous().view(-1, 3)
         
@@ -144,15 +145,13 @@ class Translator(nn.Module):
     def forward(self, query_indices, query_points, feature_volume, count_volume):
         
         device = feature_volume.device
-        tsdf_volume = torch.zeros_like(count_volume).float().to(device)
-        occ_volume = torch.zeros_like(count_volume).float().to(device)
+        # tsdf_volume = torch.zeros_like(count_volume).float().to(device)
+        # occ_volume = torch.zeros_like(count_volume).float().to(device)
         gathered_feature, indices = self._neighbor_interpolator.forward(query_indices, query_points,feature_volume, count_volume)
         tsdf, occupancy = self._translate_mlp.forward(gathered_feature)
 
-
-
-        insert_values(tsdf.squeeze(), indices, tsdf_volume)
-        insert_values(occupancy.squeeze(), indices, occ_volume)
-        
-        return tsdf_volume, occ_volume, tsdf, occupancy
+        # insert_values(tsdf.squeeze(), indices, tsdf_volume)
+        # insert_values(occupancy.squeeze(), indices, occ_volume)
+        del gathered_feature, indices
+        return tsdf, occupancy # tsdf_volume, occ_volume, 
     

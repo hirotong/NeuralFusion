@@ -11,8 +11,8 @@ from utils.loading import *
 from utils.setup import *
 from utils.loss import FusionLoss, NeuralFusionLoss
 from torch.utils.data import DataLoader
-from torch.optim import RMSprop
-from torch.optim.lr_scheduler import StepLR
+from torch.optim import RMSprop, Adam
+from torch.optim.lr_scheduler import StepLR, ExponentialLR
 from modules.pipeline import Pipeline
 
 from tqdm import tqdm
@@ -67,18 +67,26 @@ def train_fusion(args):
     criterion = NeuralFusionLoss(config)
 
     # optimizer
+    optimizer = Adam(
+        [
+            {'params': pipeline._fusion_network.parameters()},
+            {'params': pipeline._translator.parameters()}
+        ],
+        config.OPTIMIZATION.lr
+    )
+    scheduler = ExponentialLR(optimizer=optimizer,
+                              gamma=config.OPTIMIZATION.scheduler.gamma)
+    # optimizer = RMSprop(
+    #     pipeline._fusion_network.parameters(),
+    #     config.OPTIMIZATION.lr,
+    #     config.OPTIMIZATION.rho,
+    #     config.OPTIMIZATION.eps,
+    #     momentum=config.OPTIMIZATION.momentum,
+    #     weight_decay=config.OPTIMIZATION.weight_decay)
 
-    optimizer = RMSprop(
-        pipeline._fusion_network.parameters(),
-        config.OPTIMIZATION.lr,
-        config.OPTIMIZATION.rho,
-        config.OPTIMIZATION.eps,
-        momentum=config.OPTIMIZATION.momentum,
-        weight_decay=config.OPTIMIZATION.weight_decay)
-
-    scheduler = StepLR(optimizer=optimizer,
-                       step_size=config.OPTIMIZATION.scheduler.step_size,
-                       gamma=config.OPTIMIZATION.scheduler.gamma)
+    # scheduler = StepLR(optimizer=optimizer,
+    #                    step_size=config.OPTIMIZATION.scheduler.step_size,
+    #                    gamma=config.OPTIMIZATION.scheduler.gamma)
 
     # define some parameters
     n_batches = float(len(train_dataset) / config.TRAINING.train_batch_size)
@@ -118,7 +126,8 @@ def train_fusion(args):
         # zero out all grads
         optimizer.zero_grad()
 
-        train_database.filter(value=3.)
+        # train_database.filter(value=3.)
+        pipeline.translate(train_database, device)
         train_eval = train_database.evaluate(mode='train', workspace=workspace)
         train_database.save_to_workspace(workspace)
         print(train_eval)
@@ -134,7 +143,8 @@ def train_fusion(args):
             # fusion pipeline
             pipeline.fuse(batch, val_database, device)
 
-        val_database.filter(value=3.)
+        # val_database.filter(value=3.)
+        pipeline.translate(val_database, device)
         val_eval = val_database.evaluate(mode='val', workspace=workspace)
         print(val_eval)
 

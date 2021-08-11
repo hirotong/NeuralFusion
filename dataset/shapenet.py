@@ -128,7 +128,7 @@ class ShapeNet(Dataset):
 
         return sample
 
-    def get_grid(self, scene, truncation=None):
+    def get_grid_occ(self, scene, truncation=None):
 
         sc, obj = scene.split(os.path.sep)
 
@@ -136,7 +136,6 @@ class ShapeNet(Dataset):
             filepath = os.path.join(self.root_dir, sc, obj, 'voxels', '*.binvox')
         else:
             filepath = os.path.join(self.root_dir, sc, obj, 'voxels', f'*.{self.grid_resolution}.binvox')
-
         filepath = glob.glob(filepath)[0]
 
         with open(filepath, 'rb') as file:
@@ -145,18 +144,20 @@ class ShapeNet(Dataset):
         resolution = 1. / self.grid_resolution
 
         grid = Voxelgrid(resolution)
+        occ = Voxelgrid(resolution)
         bbox = np.zeros((3, 2))
         bbox[:, 0] = volume.translate
         bbox[:, 1] = bbox[:, 0] + resolution * volume.dims[0]
 
         grid.from_array(volume.data.astype(np.int), bbox)
+        occ.from_array(volume.data.astype(np.float), bbox)
         # calculate tsdf
         grid.transform()
         grid.volume *= resolution
 
         if truncation is not None:
             grid.volume[np.abs(grid.volume) >= truncation] = truncation
-        return grid
+        return grid, occ
 
     def get_occ(self, scene):
         # TODO
@@ -164,7 +165,7 @@ class ShapeNet(Dataset):
         if self.grid_resolution == 256:
             filepath = os.path.join(self.root_dir, sc, obj, 'occupancy', '*.npz')
         else:
-            filepath = os.path.join(self.root_dir, sc, obj, 'occupancy', f'*.{self.resolution}.npz')
+            filepath = os.path.join(self.root_dir, sc, obj, 'occupancy', f'*.{self.grid_resolution}.npz')
 
         filepath = glob.glob(filepath)[0]
         volume = np.load(filepath)
@@ -173,7 +174,7 @@ class ShapeNet(Dataset):
         
         resolution = 1. / self.grid_resolution
         occ = Voxelgrid(resolution)
-        occ.volume = np.zeros((128, 128, 128))
+        
         return occ
 
         

@@ -34,7 +34,6 @@ while read -r line; do
     scenes+=("$reformatted")
 done < lists/shapenet/fusion/test.txt
 
-
 # copying all scenes to destination
 for s in "${scenes[@]}"; do
 
@@ -74,8 +73,10 @@ for s in "${scenes[@]}"; do
   mkdir -p "$ID_PATH/voxels"
 
   cd "$ID_PATH/out/"
-
-  binvox -cb -bb -0.5 -0.5 -0.5 0.5 0.5 0.5 -rotz -rotz -rotz -rotx -pb -d 128 *
+  # will crush if use -pb option
+  # rotation is due to that binvox will change the axis, rotate to align with the original model 
+  binvox -cb -bb -0.5 -0.5 -0.5 0.5 0.5 0.5 -rotz -rotz -rotz -rotx -d 128 *
+  # binvox -cb -bb -0.5 -0.5 -0.5 0.5 0.5 0.5 -rotz -rotz -rotz -rotx -pb -d 128 *
 
   fname=(*.binvox)
   basename "$fname"
