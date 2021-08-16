@@ -8,16 +8,16 @@ cd deps
 
 # install distance transform
 cd distance-transform
-pip install -e .
+CC=gcc pip install -e .
 cd ..
 
 # install graphics
 cd graphics
-pip install -e .
+CC=gcc pip install -e .
 cd ..
 
 # install tsdf
 cd tsdf
-pip install -e .
+CC=gcc pip install -e .
 cd ..
 
