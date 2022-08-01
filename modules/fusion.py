@@ -40,7 +40,7 @@ class FusionNet(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        
+
         self.in_shape = config.in_shape
         self.n_channels = config.n_points * config.len_feature + 4
 
@@ -69,10 +69,10 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        
+
         self.in_shape = config.in_shape 
         self.n_channels = config.n_points * config.len_feature + 4
-        
+
         self.block1 = block(self.in_shape, 5 * self.n_channels, 4 * self.n_channels, kernel_size=1, padding=0)
         self.block2 = block(self.in_shape, 4 * self.n_channels, 3 * self.n_channels, kernel_size=1, padding=0)
         self.block3 = block(self.in_shape, 3 * self.n_channels, 2 * self.n_channels, kernel_size=1, padding=0)

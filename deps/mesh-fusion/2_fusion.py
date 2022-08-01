@@ -91,11 +91,10 @@ class Fusion:
         :return: list of files
         """
 
-        files = []
-        for filename in os.listdir(directory):
-            files.append(os.path.normpath(os.path.join(directory, filename)))
-
-        return files
+        return [
+            os.path.normpath(os.path.join(directory, filename))
+            for filename in os.listdir(directory)
+        ]
 
     def get_points(self):
         """
@@ -219,15 +218,18 @@ class Fusion:
             extrinsics = np.eye(4)
             extrinsics[:3, :3] = R
             extrinsics[:3, 3] = T
-            np.savetxt(os.path.join(data_dir, '{}.extrinsics.txt'.format(i)), extrinsics)
+            np.savetxt(os.path.join(data_dir, f'{i}.extrinsics.txt'), extrinsics)
 
             intrinsics = self.fusion_intrisics
-            np.savetxt(os.path.join(data_dir, '{}.intrinsics.txt'.format(i)), intrinsics)
+            np.savetxt(os.path.join(data_dir, f'{i}.intrinsics.txt'), intrinsics)
 
             depth = np.copy(depthmaps[i])
             depth *= 1000
             depth = depth.astype(np.uint16)
-            cv2.imwrite(os.path.expanduser(os.path.join(data_dir, '{}.depth.png'.format(i))), depth)
+            cv2.imwrite(
+                os.path.expanduser(os.path.join(data_dir, f'{i}.depth.png')), depth
+            )
+
 
         Ts = np.array(Ts).astype(np.float32)
         Rs = np.array(Rs).astype(np.float32)
@@ -269,7 +271,10 @@ class Fusion:
             mesh = common.Mesh.from_off(filepath)
             depths = self.render(mesh, Rs)
 
-            depth_file = os.path.join(self.options.depth_dir, os.path.basename(filepath) + '.h5')
+            depth_file = os.path.join(
+                self.options.depth_dir, f'{os.path.basename(filepath)}.h5'
+            )
+
             common.write_hdf5(depth_file, np.array(depths))
             print('[Data] wrote %s (%f seconds)' % (depth_file, timer.elapsed()))
 

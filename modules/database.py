@@ -12,10 +12,10 @@ class Database(Dataset):
     
     def __init__(self, dataset, config):
         super().__init__()
-        
+
         self.transform = config.transform
         self.initial_value = config.init_value
-        
+
         self.scenes_tsdf = {}
         self.scenes_occ = {}
         self.feature_est = {}
@@ -23,22 +23,25 @@ class Database(Dataset):
         self.occ_est = {}
         self.fusion_weights = {}
         self.update_counts = {}
-        
+
         for s in dataset.scenes:
-            
+
             grid, occ = dataset.get_grid_occ(s, truncation=self.initial_value)
-            
-            
+
+
             self.scenes_tsdf[s] = grid
             # TODO get occupancy volume from input data
             self.scenes_occ[s] = occ
             # self.scenes_occ[s] = dataset.get_occ(s)
-            
+
             # init_volume = self.initial_value * np.ones_like(grid.volume)
-            init_feature = self.initial_value * np.ones(grid.volume.shape + tuple([config.len_feature]))
+            init_feature = self.initial_value * np.ones(
+                grid.volume.shape + (config.len_feature,)
+            )
+
             init_tsdf = self.initial_value * np.ones(grid.volume.shape)
             init_occ = np.zeros(grid.volume.shape)
-            
+
             self.feature_est[s] = Voxelgrid(self.scenes_tsdf[s].resolution)
             self.feature_est[s].from_array(init_feature, self.scenes_tsdf[s].bbox)
             self.tsdf_est[s] = Voxelgrid(self.scenes_tsdf[s].resolution)
@@ -50,18 +53,19 @@ class Database(Dataset):
             
     def __getitem__(self, item):
 
-        sample = dict()
-        sample['occ'] = self.scenes_occ[item].volume
-        sample['tsdf'] = self.scenes_tsdf[item].volume
-        sample['current'] = self.feature_est[item].volume
-        sample['origin'] = self.scenes_tsdf[item].origin
-        sample['resolution'] = self.scenes_tsdf[item].resolution
-        sample['weights'] = self.fusion_weights[item]
-        sample['counts'] = self.update_counts[item]
+        sample = {
+            'occ': self.scenes_occ[item].volume,
+            'tsdf': self.scenes_tsdf[item].volume,
+            'current': self.feature_est[item].volume,
+            'origin': self.scenes_tsdf[item].origin,
+            'resolution': self.scenes_tsdf[item].resolution,
+            'weights': self.fusion_weights[item],
+            'counts': self.update_counts[item],
+        }
 
         if self.transform is not None:
             sample = self.transform(sample)
-        
+
         return sample
     
     def __len__(self):
@@ -75,15 +79,15 @@ class Database(Dataset):
             self.fusion_weights[key][weights < value] = 0
             
     def save_to_workspace(self, workspace):
-        
+
         for key in self.feature_est.keys():
-            
+
             tsdf_volume = self.tsdf_est[key].volume
             occ_volume = self.occ_est[key].volume
-            
+
             tsdf_file = key.replace(os.path.sep, '.') + '.tsdf.hf5'
             occ_file = key.replace(os.path.sep, '.') + '.weights.hf5'
-            
+
             workspace.save_tsdf_data(tsdf_file, tsdf_volume)
             workspace.save_occ_data(occ_file, occ_volume)          
             
@@ -91,29 +95,28 @@ class Database(Dataset):
     def save(self, path, scene_id=None, epoch=None, groundtruth=False):
         if scene_id is None:
             raise NotImplementedError
-        pass
 
     def evaluate(self, mode='train', workspace=None):
-        
+
         eval_tsdf = {}
-        
+
         for scene_id in self.feature_est.keys():
-            
+
             if workspace is None:
                 print("Evaluating ", scene_id, "...")
             else:
                 workspace.log(f"Evaluating {scene_id} ...", mode)
-            
+
             update_counts = self.update_counts[scene_id]
             tsdf_est = self.tsdf_est[scene_id].volume
             tsdf_gt = self.scenes_tsdf[scene_id].volume
-            
+
             mask = np.copy(update_counts)
             mask[mask > 0] = 1.
-            
+
             eval_scene_tsdf = evaluation(tsdf_est, tsdf_gt, mask)
             # eval_results_occ = evaluation()
-            
+
             for key in eval_scene_tsdf.keys():
                 if workspace is None:
                     print(key, eval_scene_tsdf[key])
@@ -124,11 +127,11 @@ class Database(Dataset):
                     eval_tsdf[key] = eval_scene_tsdf[key]
                 else:
                     eval_tsdf[key] += eval_scene_tsdf[key]
-        
+
         # normalizing metrics
-        for key in eval_tsdf.keys():
+        for key in eval_tsdf:
             eval_tsdf[key] /= len(self.scenes_tsdf.keys())
-        
+
         return eval_tsdf
              
     

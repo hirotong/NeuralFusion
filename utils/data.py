@@ -175,16 +175,11 @@ class EarlyStopping(object):
         return self
 
     def __next__(self):
-        if not self.stop_iteration:
-            if self.epoch < self.max_epoch:
-                self.epoch += 1
-                return self.epoch
-
-            else:
-                raise StopIteration()
-
-        else:
+        if self.stop_iteration or self.epoch >= self.max_epoch:
             raise StopIteration()
+
+        self.epoch += 1
+        return self.epoch
 
     def update(self, loss, epoch):
 
@@ -213,10 +208,7 @@ if __name__ == '__main__':
         print(epoch)
         if epoch < 2:
             loss -= 1
-            stopper.update(loss, epoch)
-        else:
-            stopper.update(loss, epoch)
-
+        stopper.update(loss, epoch)
     print('iteration worked')
 
 

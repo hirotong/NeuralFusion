@@ -20,22 +20,25 @@ class NeuralFusionLoss(nn.Module):
         self.lambda4 = 0.05
         
     def forward(self, output):
-        
+
         l1 = self.criterion1(output['tsdf_est'], output['tsdf_target'])
         l2 = self.criterion2(output['tsdf_est'], output['tsdf_target'])
         l3 = self.criterion3(output['occ_est'], output['occ_target'])
         l4 = self.criterion4(output['feature_est'])
-        
+
         normalization = torch.ones_like(output['tsdf_est']).sum()
-        
+
         l1 = l1.sum() / normalization
         l2 = l2.sum() / normalization
         l3 = l3.sum() / normalization
         l4 = l4.sum() / normalization
-        
-        loss = self.lambda1 * l1 + self.lambda2 * l2 + self.lambda3 * l3 + self.lambda4 * l4 
-        
-        return loss
+
+        return (
+            self.lambda1 * l1
+            + self.lambda2 * l2
+            + self.lambda3 * l3
+            + self.lambda4 * l4
+        )
 
 class RegularizeLoss(nn.Module):
     def __init__(self, reduction='none'):
@@ -55,7 +58,7 @@ class FusionLoss(torch.nn.Module):
         self.criterion3 = torch.nn.CosineEmbeddingLoss(margin=0.0, reduction=reduction)
 
         self.lambda1 = 1. if l1 else 0.
-        self.lambda2 = 0. if l2 else 0.
+        self.lambda2 = 0.
         self.lambda3 = 0.1   if cos else 0.
 
     def forward(self, est, target):
@@ -88,9 +91,7 @@ class FusionLoss(torch.nn.Module):
         l2 = l2.sum() / normalization
         l3 = l3.sum() / normalization
 
-        l = self.lambda1*l1 + self.lambda2*l2 + self.lambda3*l3
-
-        return l
+        return self.lambda1*l1 + self.lambda2*l2 + self.lambda3*l3
 
 
 class RoutingLoss(torch.nn.Module):
@@ -152,9 +153,9 @@ class GradientWeightedDepthLoss(torch.nn.Module):
         height = input.size(2)
         heightcrop = int(height * self.crop_fraction)
         width = input.size(3)
-        widthcrop = int(width * self.crop_fraction)
-
         if self.crop_fraction > 0:
+            widthcrop = int(width * self.crop_fraction)
+
             input_crop = input[:,:,heightcrop:height-heightcrop,widthcrop:width-widthcrop]
             target_crop = target[:,:,heightcrop:height-heightcrop,widthcrop:width-widthcrop]
         else:
@@ -243,9 +244,9 @@ class UncertaintyDepthLoss(torch.nn.Module):
         height = input.size(2)
         heightcrop = int(height * self.crop_fraction)
         width = input.size(3)
-        widthcrop = int(width * self.crop_fraction)
-
         if self.crop_fraction > 0:
+            widthcrop = int(width * self.crop_fraction)
+
             input_crop = input[:,:,heightcrop:height-heightcrop,widthcrop:width-widthcrop]
             target_crop = target[:,:,heightcrop:height-heightcrop,widthcrop:width-widthcrop]
         else:

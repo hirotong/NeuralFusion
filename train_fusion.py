@@ -94,8 +94,8 @@ def train_fusion(args):
     # evaluation metrics
     best_iou = 0.
 
-    for epoch in range(0, config.TRAINING.n_epochs):
-        print('Training on epoch {}/{}'.format(epoch, config.TRAINING.n_epochs))
+    for epoch in range(config.TRAINING.n_epochs):
+        print(f'Training on epoch {epoch}/{config.TRAINING.n_epochs}')
 
         pipeline.train()
 
@@ -152,8 +152,11 @@ def train_fusion(args):
         if val_eval['iou'] >= best_iou:
             is_best = True
             best_iou = val_eval['iou']
-            workspace.log('found new best model with iou {} at epoch {}'.format(
-                best_iou, epoch), mode='val')
+            workspace.log(
+                f'found new best model with iou {best_iou} at epoch {epoch}',
+                mode='val',
+            )
+
         else:
             is_best = False
 

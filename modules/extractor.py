@@ -178,9 +178,9 @@ class Extractor(nn.Module):
 
 
 def sample_feature(points, feature_volume, method='nearset'):
-    if 'nearest' == method:
+    if method == 'nearest':
         return nearest_feature(points, feature_volume)
-    elif 'trilinear' == method:
+    elif method == 'trilinear':
         return trilinear_feature(points, feature_volume)
     else:
         raise NotImplementedError(f"{method} is not supported.")
@@ -208,9 +208,9 @@ def nearest_feature(points, feature_volume):
     feature_container[valid_idx] = feature_values
 
     feature_values = feature_container.view(b, h, n, -1)
-    
+
     del feature_container
-    
+
     return feature_values.float(), indices
 
 
@@ -253,15 +253,13 @@ def trilinear_feature(points, feature_volume, weight_volume=None):
 
 
 def interpolation_weights(points, mode='center'):
-    if 'center' == mode:
+    if mode == 'center':
         # compute step direction
         center = torch.floor(points) + 0.5 * torch.ones_like(points)
-        # this is different from the author's implementation
-        neighbor = torch.sign(points - center)
     else:
         center = torch.floor(points)
-        neighbor = torch.sign(points - center)
-
+    # this is different from the author's implementation
+    neighbor = torch.sign(points - center)
     # index of center voxel
     idx = torch.floor(points)
 
@@ -279,9 +277,9 @@ def interpolation_weights(points, mode='center'):
     weights = []
     indices = []
 
-    for i in range(0, 2):
-        for j in range(0, 2):
-            for k in range(0, 2):
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
                 if i == 0:
                     w1 = alpha_inv[:, 0]
                     ix = idx[:, 0]
@@ -294,12 +292,8 @@ def interpolation_weights(points, mode='center'):
                 else:
                     w2 = alpha[:, 1]
                     iy = idx[:, 1] + neighbor[:, 1]
-                if k == 0:
-                    w3 = alpha_inv[:, 2]
-                    iz = idx[:, 2]
-                else:
-                    w3 = alpha[:, 2]
-                    iz = idx[:, 2]
+                w3 = alpha_inv[:, 2] if k == 0 else alpha[:, 2]
+                iz = idx[:, 2]
                 weights.append((w1 * w2 * w3).unsqueeze_(1))
                 indices.append(torch.cat((ix.unsqueeze_(1),
                                           iy.unsqueeze_(1),
@@ -313,10 +307,10 @@ def interpolation_weights(points, mode='center'):
 
 
 def nearest_indices(points, mode='center'):
-    
+
     b, h, n, dim = points.shape
-    
-    if 'center' == mode:
+
+    if mode == 'center':
         center = torch.floor(points) + 0.5 * torch.ones_like(points)
         indices = torch.floor(points)
     else:
@@ -325,7 +319,7 @@ def nearest_indices(points, mode='center'):
                             torch.ones_like(points)).float()
         indices = torch.floor(points) + neighbor
     indices = indices.contiguous().view(b, h*n, dim).long()
-    
+
     return indices
 
 

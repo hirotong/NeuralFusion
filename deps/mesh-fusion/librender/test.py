@@ -40,30 +40,8 @@ def model():
     f11 = [2, 3, 6]
     f12 = [3, 7, 6]
 
-    vertices = []
-    vertices.append(v000)
-    vertices.append(v001)
-    vertices.append(v010)
-    vertices.append(v011)
-    vertices.append(v100)
-    vertices.append(v101)
-    vertices.append(v110)
-    vertices.append(v111)
-
-    faces = []
-    faces.append(f1)
-    faces.append(f2)
-    faces.append(f3)
-    faces.append(f4)
-    faces.append(f5)
-    faces.append(f6)
-    faces.append(f7)
-    faces.append(f8)
-    faces.append(f9)
-    faces.append(f10)
-    faces.append(f11)
-    faces.append(f12)
-
+    vertices = [v000, v001, v010, v011, v100, v101, v110, v111]
+    faces = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12]
     return vertices, faces
 
 def render(vertices, faces):

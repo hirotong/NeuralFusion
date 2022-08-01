@@ -24,7 +24,7 @@ class TestDT(unittest.TestCase):
 
   def test_distance_cost(self):
     """Assert that the minimum solution cost > the minimum potential"""
-    for n in xrange(100):
+    for _ in xrange(100):
       x = np.random.standard_normal((9,13))
       xs,i = dt.compute(x)
       self.assertTrue(xs.min() >= x.min())

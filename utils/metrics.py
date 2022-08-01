@@ -22,45 +22,41 @@ def evaluation(est, target, mask=None, value=0.1):
 
 
 def recall_fn(est, target, mask=None):
-    
+
     if mask is not None:
         tp = (est < 0) & (target < 0) & (mask > 0)
         fn = (est >= 0) & (target < 0) & (mask > 0)
     else:
         tp = (est < 0) & (target < 0)
         fn = (est >= 0) & (target < 0)
-    
-    metric = tp.sum() / (tp.sum() + fn.sum())
-    return metric
+
+    return tp.sum() / (tp.sum() + fn.sum())
 
 def rmse_fn(est, target, mask=None):
 
-    if mask is not None:
-        metric = np.sqrt(np.sum(mask * np.power(est - target, 2)) / np.sum(mask))
-    else:
-        metric = np.sqrt(np.mean(np.power(est - target, 2)))
-
-    return metric
+    return (
+        np.sqrt(np.sum(mask * np.power(est - target, 2)) / np.sum(mask))
+        if mask is not None
+        else np.sqrt(np.mean(np.power(est - target, 2)))
+    )
 
 
 def mse_fn(est, target, mask=None):
 
-    if mask is not None:
-        metric = np.sum(mask * np.power(est - target, 2)) / np.sum(mask)
-    else:
-        metric = np.mean(np.power(est - target, 2))
-
-    return metric
+    return (
+        np.sum(mask * np.power(est - target, 2)) / np.sum(mask)
+        if mask is not None
+        else np.mean(np.power(est - target, 2))
+    )
 
 
 def mad_fn(est, target, mask=None):
 
-    if mask is not None:
-        metric = np.sum(mask * np.abs(est - target)) / np.sum(mask)
-    else:
-        metric = np.mean(np.abs(est - target))
-
-    return metric
+    return (
+        np.sum(mask * np.abs(est - target)) / np.sum(mask)
+        if mask is not None
+        else np.mean(np.abs(est - target))
+    )
 
 
 def iou_fn(est, target, mask=None):
@@ -77,8 +73,7 @@ def iou_fn(est, target, mask=None):
     intersection = tp.sum()
     union = tp.sum() + fp.sum() + fn.sum()
 
-    metric = intersection / union
-    return metric
+    return intersection / union
 
 
 def acc_fn(est, target, mask=None):
@@ -90,9 +85,7 @@ def acc_fn(est, target, mask=None):
         tp = (est < 0) & (target < 0)
         tn = (est >= 0) & (target >= 0)
 
-    acc = (tp.sum() + tn.sum()) / mask.sum()
-    metric = acc
-    return metric
+    return (tp.sum() + tn.sum()) / mask.sum()
 
 
 def l2(est, gt, mask=None):

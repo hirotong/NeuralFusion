@@ -39,9 +39,7 @@ def get_spherical_pose(theta, phi, radius):
         [0, 0, 0, 1]
     ])
 
-    c2w = rot_theta @ rot_phi @ trans_t
-
-    return c2w
+    return rot_theta @ rot_phi @ trans_t
 
 
 def load_tsdf_file(path):
@@ -71,7 +69,7 @@ if __name__ == '__main__':
             c2w = c2w[:3, :]
             np_vertices = c2w[:3, :3].dot(vertex.T).T
             np_vertices += c2w[:, 3]
-            
+
             depthmap, mask, img = pyrender.render(np_vertices.T.copy(), faces.T.copy(), render_intrinsics, np.array([1., 2.]), image_size)
             im = plt.imshow(img)
             ims.append(im)

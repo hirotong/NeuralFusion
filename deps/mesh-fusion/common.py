@@ -48,11 +48,11 @@ def read_hdf5(file, key = 'tensor'):
     :rtype: numpy.ndarray
     """
 
-    assert os.path.exists(file), 'file %s not found' % file
+    assert os.path.exists(file), f'file {file} not found'
 
     h5f = h5py.File(file, 'r')
 
-    assert key in h5f.keys(), 'key %s not found in file %s' % (key, file)
+    assert key in h5f.keys(), f'key {key} not found in file {file}'
     tensor = h5f[key][()]
     h5f.close()
 
@@ -76,14 +76,14 @@ def write_off(file, vertices, faces):
 
     with open(file, 'w') as fp:
         fp.write('OFF\n')
-        fp.write(str(num_vertices) + ' ' + str(num_faces) + ' 0\n')
+        fp.write(f'{num_vertices} {num_faces}' + ' 0\n')
 
         for vertex in vertices:
             assert len(vertex) == 3, 'invalid vertex with %d dimensions found (%s)' % (len(vertex), file)
-            fp.write(str(vertex[0]) + ' ' + str(vertex[1]) + ' ' + str(vertex[2]) + '\n')
+            fp.write(f'{str(vertex[0])} {str(vertex[1])} {str(vertex[2])}' + '\n')
 
         for face in faces:
-            assert face[0] == 3, 'only triangular faces supported (%s)' % file
+            assert face[0] == 3, f'only triangular faces supported ({file})'
             assert len(face) == 4, 'faces need to have 3 vertices, but found %d (%s)' % (len(face), file)
 
             for i in range(len(face)):
@@ -108,7 +108,7 @@ def read_off(file):
     :rtype: [(float)], [(int)]
     """
 
-    assert os.path.exists(file), 'file %s not found' % file
+    assert os.path.exists(file), f'file {file} not found'
 
     with open(file, 'r') as fp:
         lines = fp.readlines()
@@ -117,32 +117,23 @@ def read_off(file):
         # Fix for ModelNet bug were 'OFF' and the number of vertices and faces are
         # all in the first line.
         if len(lines[0]) > 3:
-            assert lines[0][:3] == 'OFF' or lines[0][:3] == 'off', 'invalid OFF file %s' % file
+            assert lines[0][:3] in ['OFF', 'off'], f'invalid OFF file {file}'
 
             parts = lines[0][3:].split(' ')
-            assert len(parts) == 3
-
-            num_vertices = int(parts[0])
-            assert num_vertices > 0
-
-            num_faces = int(parts[1])
-            assert num_faces > 0
-
             start_index = 1
-        # This is the regular case!
         else:
-            assert lines[0] == 'OFF' or lines[0] == 'off', 'invalid OFF file %s' % file
+            assert lines[0] in ['OFF', 'off'], f'invalid OFF file {file}'
 
             parts = lines[1].split(' ')
-            assert len(parts) == 3
-
-            num_vertices = int(parts[0])
-            assert num_vertices > 0
-
-            num_faces = int(parts[1])
-            assert num_faces > 0
-
             start_index = 2
+
+        assert int(parts[1]) > 0
+
+        num_faces = int(parts[1])
+        assert int(parts[0]) > 0
+
+        num_vertices = int(parts[0])
+        assert len(parts) == 3
 
         vertices = []
         for i in range(num_vertices):
@@ -159,12 +150,15 @@ def read_off(file):
 
             # check to be sure
             for index in face:
-                assert index != '', 'found empty vertex index: %s (%s)' % (lines[start_index + num_vertices + i], file)
+                assert (
+                    index != ''
+                ), f'found empty vertex index: {lines[start_index + num_vertices + i]} ({file})'
+
 
             face = [int(index) for index in face]
 
             assert face[0] == len(face) - 1, 'face should have %d vertices but as %d (%s)' % (face[0], len(face) - 1, file)
-            assert face[0] == 3, 'only triangular meshes supported (%s)' % file
+            assert face[0] == 3, f'only triangular meshes supported ({file})'
             for index in face:
                 assert index >= 0 and index < num_vertices, 'vertex %d (of %d vertices) does not exist (%s)' % (index, num_vertices, file)
 
@@ -174,7 +168,7 @@ def read_off(file):
 
         return vertices, faces
 
-    assert False, 'could not open %s' % file
+    assert False, f'could not open {file}'
 
 def write_obj(file, vertices, faces):
     """
@@ -198,7 +192,7 @@ def write_obj(file, vertices, faces):
             fp.write('v' + ' ' + str(vertex[0]) + ' ' + str(vertex[1]) + ' ' + str(vertex[2]) + '\n')
 
         for face in faces:
-            assert len(face) == 3, 'only triangular faces supported (%s)' % file
+            assert len(face) == 3, f'only triangular faces supported ({file})'
             fp.write('f ')
 
             for i in range(len(face)):
@@ -224,7 +218,7 @@ def read_obj(file):
     :rtype: [(float)], [(int)]
     """
 
-    assert os.path.exists(file), 'file %s not found' % file
+    assert os.path.exists(file), f'file {file} not found'
 
     with open(file, 'r') as fp:
         lines = fp.readlines()
@@ -239,9 +233,9 @@ def read_obj(file):
             if parts[0] == 'v':
                 assert len(parts) == 4, \
                     'vertex should be of the form v x y z, but found %d parts instead (%s)' % (len(parts), file)
-                assert parts[1] != '', 'vertex x coordinate is empty (%s)' % file
-                assert parts[2] != '', 'vertex y coordinate is empty (%s)' % file
-                assert parts[3] != '', 'vertex z coordinate is empty (%s)' % file
+                assert parts[1] != '', f'vertex x coordinate is empty ({file})'
+                assert parts[2] != '', f'vertex y coordinate is empty ({file})'
+                assert parts[3] != '', f'vertex z coordinate is empty ({file})'
 
                 vertices.append([float(parts[1]), float(parts[2]), float(parts[3])])
             elif parts[0] == 'f':
@@ -251,35 +245,32 @@ def read_obj(file):
                 components = parts[1].split('/')
                 assert len(components) >= 1 and len(components) <= 3, \
                    'face component should have the forms v, v/vt or v/vt/vn, but found %d components instead (%s)' % (len(components), file)
-                assert components[0].strip() != '', \
-                    'face component is empty (%s)' % file
+                assert components[0].strip() != '', f'face component is empty ({file})'
                 v1 = int(components[0])
 
                 components = parts[2].split('/')
                 assert len(components) >= 1 and len(components) <= 3, \
                     'face component should have the forms v, v/vt or v/vt/vn, but found %d components instead (%s)' % (len(components), file)
-                assert components[0].strip() != '', \
-                    'face component is empty (%s)' % file
+                assert components[0].strip() != '', f'face component is empty ({file})'
                 v2 = int(components[0])
 
                 components = parts[3].split('/')
                 assert len(components) >= 1 and len(components) <= 3, \
                     'face component should have the forms v, v/vt or v/vt/vn, but found %d components instead (%s)' % (len(components), file)
-                assert components[0].strip() != '', \
-                    'face component is empty (%s)' % file
+                assert components[0].strip() != '', f'face component is empty ({file})'
                 v3 = int(components[0])
 
                 #assert v1 != v2 and v2 != v3 and v3 != v2, 'degenerate face detected: %d %d %d (%s)' % (v1, v2, v3, file)
                 if v1 == v2 or v2 == v3 or v1 == v3:
-                    print('[Info] skipping degenerate face in %s' % file)
+                    print(f'[Info] skipping degenerate face in {file}')
                 else:
                     faces.append([v1 - 1, v2 - 1, v3 - 1]) # indices are 1-based!
             else:
-                assert False, 'expected either vertex or face but got line: %s (%s)' % (line, file)
+                assert False, f'expected either vertex or face but got line: {line} ({file})'
 
         return vertices, faces
 
-    assert False, 'could not open %s' % file
+    assert False, f'could not open {file}'
 
 def makedir(dir):
     """
@@ -453,9 +444,7 @@ class Mesh:
         :rtype: Mesh
         """
 
-        mesh = Mesh(self.vertices.copy(), self.faces.copy())
-
-        return mesh
+        return Mesh(self.vertices.copy(), self.faces.copy())
 
     @staticmethod
     def from_off(filepath):

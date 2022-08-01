@@ -33,8 +33,7 @@ def mesh_to_pointcloud(vertices, faces, npoints):
 
     points = []
 
-    for i in tqdm(range(0, npoints), total=npoints):
-
+    for _ in tqdm(range(npoints), total=npoints):
         p_triangle = np.random.uniform(0, 1)
         p_index = find_index(p_triangle, probabilities)
         face_idx = face_indices[p_index]
@@ -69,9 +68,7 @@ def sample_point_from_triangle(p1, p2, p3):
     a = np.random.uniform(0, 1)
     b = np.random.uniform(0, 1)
 
-    x = p1 + a*(p2 - p1) + b*(p3 - p1)
-
-    return x
+    return p1 + a*(p2 - p1) + b*(p3 - p1)
 
 
 

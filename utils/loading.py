@@ -14,9 +14,7 @@ def load_config_from_yaml(path):
     :return: easydict containing config
     """
     c = yaml.load(open(path))
-    config = EasyDict(c)
-
-    return config
+    return EasyDict(c)
 
 
 def load_config_from_json(path):
@@ -28,8 +26,7 @@ def load_config_from_json(path):
     """
     with open(path, 'r') as file:
         data = json.load(file)
-    config = EasyDict(data)
-    return config
+    return EasyDict(data)
 
 
 def load_experiment(path):
@@ -39,8 +36,7 @@ def load_experiment(path):
     :return: easydict containing config
     """
     path = os.path.join(path, 'config.json')
-    config = load_config_from_json(path)
-    return config
+    return load_config_from_json(path)
 
 
 def load_config(path):
@@ -62,7 +58,7 @@ def load_model(file, model):
     checkpoint = file
 
     if not os.path.exists(checkpoint):
-        raise FileNotFoundError("File doesn't exist {}".format(checkpoint))
+        raise FileNotFoundError(f"File doesn't exist {checkpoint}")
     try:
         if torch.cuda.is_available():
             checkpoint = torch.load(checkpoint)
@@ -80,7 +76,7 @@ def load_pipeline(file, model, device):
     checkpoint = file
 
     if not os.path.exists(checkpoint):
-        raise FileNotFoundError("File doesn't exist {}".format(checkpoint))
+        raise FileNotFoundError(f"File doesn't exist {checkpoint}")
     try:
         if torch.cuda.is_available():
             checkpoint = torch.load(checkpoint, map_location=device)
@@ -104,7 +100,7 @@ def load_checkpoint(checkpoint, model, optimizer=None):
         optimizer: (torch.optim) optional: resume optimizer from checkpoint
     """
     if not os.path.exists(checkpoint):
-        raise FileNotFoundError("File doesn't exist {}".format(checkpoint))
+        raise FileNotFoundError(f"File doesn't exist {checkpoint}")
     try:
         if torch.cuda.is_available():
             checkpoint = torch.load(checkpoint)

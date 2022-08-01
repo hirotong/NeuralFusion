@@ -76,7 +76,7 @@ class TranslateMLP(nn.Module):
     
     def __init__(self, config):
         super().__init__()
-        
+
         self.tsdf_scale = config.tsdf_scale
         self.p = config.p_dropout
         self.n_points = config.n_points
@@ -88,19 +88,19 @@ class TranslateMLP(nn.Module):
             self.activation,
             nn.Dropout(p=self.p)
         )
-        
+
         self.layer2 = nn.Sequential(
             nn.Linear(self.out_channels[0] + self.len_feature * 2, self.out_channels[1]),
             self.activation,
             nn.Dropout(p=self.p)
         )
-        
+
         self.layer3 = nn.Sequential(
             nn.Linear(self.out_channels[1] + self.len_feature * 2, self.out_channels[2]),
             self.activation,
             nn.Dropout(p=self.p)
         )
-        
+
         self.layer4 = nn.Sequential(
             nn.Linear(self.out_channels[2] + self.len_feature * 2, self.out_channels[3]),
             self.activation,

@@ -37,11 +37,10 @@ class Scale:
         :return: list of files
         """
 
-        files = []
-        for filename in os.listdir(directory):
-            files.append(os.path.normpath(os.path.join(directory, filename)))
-
-        return files
+        return [
+            os.path.normpath(os.path.join(directory, filename))
+            for filename in os.listdir(directory)
+        ]
 
     def run(self):
         """

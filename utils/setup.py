@@ -45,7 +45,7 @@ def get_database(dataset, config, mode='train'):
     database_config = copy(config.DATA)
     database_config.len_feature = config.MODEL.len_feature
     database_config.transform = transform.ToTensor()
-    database_config.scene_list = eval('config.DATA.{}_scene_list'.format(mode))
+    database_config.scene_list = eval(f'config.DATA.{mode}_scene_list')
 
     return Database(dataset, database_config)
 
@@ -53,13 +53,12 @@ def get_database(dataset, config, mode='train'):
 def get_workspace(config):
     workspace_path = os.path.join(config.SETTINGS.experiment_path,
                                   config.TIMESTAMP)
-    workspace = Workspace(workspace_path)
-    return workspace
+    return Workspace(workspace_path)
 
 
 def get_logger(path, name='training'):
 
-    filehandler = logging.FileHandler(os.path.join(path, '{}.logs'.format(name)), 'a')
+    filehandler = logging.FileHandler(os.path.join(path, f'{name}.logs'), 'a')
     consolehandler = logging.StreamHandler()
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

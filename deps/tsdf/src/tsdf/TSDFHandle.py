@@ -91,27 +91,26 @@ class MulticlassTSDF:
         grid_labelled = np.argmin(volume, axis=-1)
         grid_occupied = (np.min(volume, axis=-1) < 0)
 
-        occupied_idxs = np.column_stack(np.where(grid_occupied == True)) * self.resolution
-        occupied_labels = grid_labelled[np.where(grid_occupied == True)]
+        occupied_idxs = np.column_stack(np.where(grid_occupied)) * self.resolution
+        occupied_labels = grid_labelled[np.where(grid_occupied)]
 
         # voxel colors
-        colors = []
-        for label in occupied_labels:
-            colors.append(label_map[label])
+        colors = [label_map[label] for label in occupied_labels]
         colors = np.asarray(colors)
 
         # voxel alphas
         alphas = len(colors) * [255]
 
-        dataframe = dict()
+        dataframe = {
+            'x': occupied_idxs[:, 0],
+            'y': occupied_idxs[:, 1],
+            'z': occupied_idxs[:, 2],
+            'red': colors[:, 0],
+            'green': colors[:, 1],
+            'blue': colors[:, 2],
+            'alpha': alphas,
+        }
 
-        dataframe['x'] = occupied_idxs[:, 0]
-        dataframe['y'] = occupied_idxs[:, 1]
-        dataframe['z'] = occupied_idxs[:, 2]
-        dataframe['red'] = colors[:, 0]
-        dataframe['green'] = colors[:, 1]
-        dataframe['blue'] = colors[:, 2]
-        dataframe['alpha'] = alphas
 
         pcl = pd.DataFrame(data=dataframe, columns=dataframe.keys())
         pcl = PyntCloud(pcl)

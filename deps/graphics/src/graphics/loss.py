@@ -6,7 +6,7 @@ def tsdf_loss(gt, est, norm='L2', mask=None):
     N = 1
     dim = len(gt.shape)
 
-    for d in range(0, dim):
+    for d in range(dim):
         N *= gt.shape[d]
 
     diff = gt - est

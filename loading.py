@@ -20,9 +20,7 @@ def load_config_from_yaml(path):
         path ([str]): [description]
     """
     c = yaml.load(open(path))
-    config = EasyDict(c)
-    
-    return config
+    return EasyDict(c)
 
 
 if __name__ == '__main__':

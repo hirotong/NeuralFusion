@@ -38,11 +38,10 @@ class Simplification:
         :return: list of files
         """
 
-        files = []
-        for filename in os.listdir(directory):
-            files.append(os.path.normpath(os.path.join(directory, filename)))
-
-        return files
+        return [
+            os.path.normpath(os.path.join(directory, filename))
+            for filename in os.listdir(directory)
+        ]
 
     def run(self):
         """
@@ -54,11 +53,9 @@ class Simplification:
         files = self.read_directory(self.options.in_dir)
 
         for filepath in files:
-            os.system('meshlabserver -i %s -o %s -s %s' % (
-                filepath,
-                os.path.join(self.options.out_dir, ntpath.basename(filepath)),
-                self.simplification_script
-            ))
+            os.system(
+                f'meshlabserver -i {filepath} -o {os.path.join(self.options.out_dir, ntpath.basename(filepath))} -s {self.simplification_script}'
+            )
 
 if __name__ == '__main__':
     app = Simplification()

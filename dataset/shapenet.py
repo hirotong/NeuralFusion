@@ -51,8 +51,7 @@ class ShapeNet(Dataset):
 
                 files = glob.glob(path)
 
-                for f in files:
-                    self.frames.append(f.replace('.depth.png', ''))
+                self.frames.extend(f.replace('.depth.png', '') for f in files)
 
     @property
     def scenes(self):
@@ -68,13 +67,9 @@ class ShapeNet(Dataset):
         pathsplit = frame.split(os.path.sep)
         sc = pathsplit[-4]
         obj = pathsplit[-3]
-        scene_id = '{}/{}'.format(sc, obj)
-        sample = {}
-
+        scene_id = f'{sc}/{obj}'
         frame_id = pathsplit[-1]
         frame_id = int(frame_id)
-        sample['frame_id'] = frame_id
-
         depth = io.imread(f'{frame}.depth.png')
         depth = depth.astype(np.float32)
         depth = depth / 1000.
@@ -82,8 +77,8 @@ class ShapeNet(Dataset):
         step_x = depth.shape[0] / self.resolution[0]
         step_y = depth.shape[1] / self.resolution[1]
 
-        index_y = [int(step_y * i) for i in range(0, int(depth.shape[1] / step_y))]
-        index_x = [int(step_x * i) for i in range(0, int(depth.shape[0] / step_x))]
+        index_y = [int(step_y * i) for i in range(int(depth.shape[1] / step_y))]
+        index_x = [int(step_x * i) for i in range(int(depth.shape[0] / step_x))]
 
         depth = depth[:, index_y]
         depth = depth[index_x, :]
@@ -91,7 +86,7 @@ class ShapeNet(Dataset):
         mask = copy(depth)
         mask[mask == np.max(depth)] = 0
         mask[mask != 0] = 1
-        sample['mask'] = copy(mask)
+        sample = {'frame_id': frame_id, 'mask': copy(mask)}
         gradient_mask = binary_dilation(mask, iterations=5)
         mask = binary_dilation(mask, iterations=8)
         sample['routing_mask'] = mask
@@ -119,8 +114,8 @@ class ShapeNet(Dataset):
 
         sample['scene_id'] = scene_id
 
-        for key in sample.keys():
-            if type(sample[key]) is not np.ndarray and type(sample[key]) is not str:
+        for key, value in sample.items():
+            if type(value) is not np.ndarray and type(sample[key]) is not str:
                 sample[key] = np.asarray(sample[key])
 
         if self.transform:
@@ -171,11 +166,9 @@ class ShapeNet(Dataset):
         volume = np.load(filepath)
 
         occupancies = volume['occupancies']
-        
+
         resolution = 1. / self.grid_resolution
-        occ = Voxelgrid(resolution)
-        
-        return occ
+        return Voxelgrid(resolution)
 
         
 

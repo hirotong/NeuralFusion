@@ -48,7 +48,6 @@ class Pipeline(nn.Module):
 
     def fuse_training(self, batch, database, device):
 
-        output = dict()
         self.device = device
 
         frame = batch[self.config.DATA.input].squeeze_(1)
@@ -76,14 +75,14 @@ class Pipeline(nn.Module):
 
 
         feature_est = self._fusion(feature_input, values)
-        
+
         # reshape target
         tsdf_target = tsdf_gt['extracted_feature']
         occ_target = occ_gt['extracted_feature']
         tsdf_target = tsdf_target.view(b, h * w, -1)
         occ_target = occ_target.view(b, h * w, -1)
         # feature_target = feature_target.view(b, h * w, self.config.MODEL.n_points)
-        
+
         values['points'] = values['points'][:, :, :self.config.MODEL.n_points].contiguous()
         # mask invalid losses
         # feature_est = masking(feature_est, filtered_frame.view(b, h * w, 1))
@@ -101,23 +100,22 @@ class Pipeline(nn.Module):
             integration_indices.to(device),
             database[batch['scene_id'][0]]['current'].to(device),
             database[batch['scene_id'][0]]['counts'].to(device))
-        
+
         database.feature_est[batch['scene_id'][0]
                             ].volume = feature_volume.cpu().detach().numpy()
         database.update_counts[batch['scene_id'][0]
                                ] = count_volume.cpu().detach().numpy()
         # translate
-        
+
         tsdf_est, occ_est = self._translator.forward(integration_indices, integration_points, feature_volume, count_volume)
-        
-        # TODO update database.scenes_tsdf database.scenes_occ
-        output['tsdf_est'] = tsdf_est
-        output['occ_est'] = occ_est
-        output['tsdf_target'] = tsdf_target
-        output['occ_target'] = occ_target
-        output['feature_est'] = feature_est
-        
-        return output
+
+        return {
+            'tsdf_est': tsdf_est,
+            'occ_est': occ_est,
+            'tsdf_target': tsdf_target,
+            'occ_target': occ_target,
+            'feature_est': feature_est,
+        }
     
     
     def fuse(self, batch, database, device):
@@ -142,7 +140,7 @@ class Pipeline(nn.Module):
 
         feature_input = self._prepare_fusion_input(frame, values, confidence)
         feature_est = self._fusion(feature_input, values)
-        
+
         values['points'] = values['points'][:, :, :self.config.MODEL.n_points].contiguous()
 
         integration_values, integration_indices, integration_points = self._prepare_integration_input(
@@ -153,7 +151,7 @@ class Pipeline(nn.Module):
             integration_indices.to(device),
             database[batch['scene_id'][0]]['current'].to(device),
             database[batch['scene_id'][0]]['counts'].to(device))
-        
+
         database.feature_est[batch['scene_id'][0]
                             ].volume = feature_volume.cpu().detach().numpy()
         database.update_counts[batch['scene_id'][0]
@@ -191,7 +189,7 @@ class Pipeline(nn.Module):
         feature_pred = self._fusion_network.forward(input)
         feature_pred = feature_pred.permute(0, 2, 3, 1)
 
-        output = dict()
+        output = {}
 
         feature_est = feature_pred.view(b, h * w, -1)
 

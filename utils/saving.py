@@ -23,8 +23,8 @@ def save_checkpoint(state, is_best, checkpoint, is_final=False):
        checkpoint: (string) folder where parameters are to be saved
     """
     if not os.path.exists(checkpoint):
-       print("Checkpoint Directory does not exist! Making directory {}".format(checkpoint))
-       os.mkdir(checkpoint)
+        print(f"Checkpoint Directory does not exist! Making directory {checkpoint}")
+        os.mkdir(checkpoint)
 
     if is_final:
         torch.save(state, os.path.join(checkpoint, 'final.pth.tar'))

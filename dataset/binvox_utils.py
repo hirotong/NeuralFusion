@@ -234,9 +234,9 @@ def write(voxel_model, fp):
     fp.write('#binvox 1\n')
     fp.write('dim '+' '.join(map(str, voxel_model.dims))+'\n')
     fp.write('translate '+' '.join(map(str, voxel_model.translate))+'\n')
-    fp.write('scale '+str(voxel_model.scale)+'\n')
+    fp.write(f'scale {str(voxel_model.scale)}' + '\n')
     fp.write('data\n')
-    if not voxel_model.axis_order in ('xzy', 'xyz'):
+    if voxel_model.axis_order not in ('xzy', 'xyz'):
         raise ValueError('Unsupported voxel model axis order')
 
     if voxel_model.axis_order=='xzy':

@@ -13,15 +13,14 @@ def get_index_mask(indices, shape):
 
     xs, ys, zs = shape[:3]
 
-    valid = (
-        (indices[:, 0] >= 0) &
-        (indices[:, 0] < xs) &
-        (indices[:, 1] >= 0) &
-        (indices[:, 1] < ys) &
-        (indices[:, 2] >= 0) &
-        (indices[:, 2] < zs))
-
-    return valid
+    return (
+        (indices[:, 0] >= 0)
+        & (indices[:, 0] < xs)
+        & (indices[:, 1] >= 0)
+        & (indices[:, 1] < ys)
+        & (indices[:, 2] >= 0)
+        & (indices[:, 2] < zs)
+    )
 
 
 def extract_indices(indices, mask):
@@ -30,9 +29,7 @@ def extract_indices(indices, mask):
     """
     mask = mask.unsqueeze(1)
 
-    masked_indices = torch.masked_select(indices, mask).reshape(-1, 3)
-
-    return masked_indices
+    return torch.masked_select(indices, mask).reshape(-1, 3)
 
 
 def extract_values(indices, volume, mask=None, fusion_weights=None):
@@ -65,8 +62,7 @@ def insert_values(values, indices, volume):
 def index_shift(radius):
     t = torch.arange(-radius, radius+1)
     dz, dy, dx = torch.meshgrid([t, t, t])
-    shift = torch.stack([dx, dy, dz], dim=-1).view(-1, 3)
-    return shift
+    return torch.stack([dx, dy, dz], dim=-1).view(-1, 3)
 
 
 def get_activation(module_name, class_name):
